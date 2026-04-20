@@ -1,19 +1,17 @@
-import { useState } from 'react';
-import { Footer, Navbar, Sidebar, Toasts } from '../components/CoreComponents';
+import { Footer, Navbar, Toast } from '../components/UIComponents';
 
-export const AppLayout = ({ children }) => {
-  const [search, setSearch] = useState('');
+export function AppLayout({ children }) {
   return (
     <div className="min-h-screen p-4">
-      <Toasts />
+      <Toast />
       <div className="mx-auto flex max-w-[1600px] gap-4">
-        <Sidebar />
+        <div className="hidden lg:block lg:w-64" />
         <main className="flex-1">
-          <Navbar search={search} setSearch={setSearch} />
-          {typeof children === 'function' ? children(search) : children}
+          <Navbar />
+          {children}
           <Footer />
         </main>
       </div>
     </div>
   );
-};
+}

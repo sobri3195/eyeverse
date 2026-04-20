@@ -1,38 +1,48 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useState } from 'react';
 
 export function LoginPage() {
   const { login } = useApp();
   const navigate = useNavigate();
-  const submit = (e) => {
+  const location = useLocation();
+  const [error, setError] = useState('');
+
+  const onSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    login({ email: fd.get('email'), role: fd.get('role') });
-    navigate('/dashboard');
+    const email = fd.get('email')?.toString().trim();
+    const password = fd.get('password')?.toString();
+    if (!email || !email.includes('@') || !password || password.length < 6) {
+      setError('Email/password tidak valid (password min 6 karakter).');
+      return;
+    }
+    login({ email, name: 'Dr. Vision User', role: 'dokter' });
+    navigate(location.state?.from || '/dashboard');
   };
-  return (
-    <div className="grid min-h-screen place-items-center p-4">
-      <form onSubmit={submit} className="glass w-full max-w-md p-6">
-        <h1 className="text-2xl font-bold">Login EYEVERSE AI</h1>
-        <input name="email" type="email" required placeholder="Email" className="mt-3 w-full rounded-xl bg-white/10 p-2" />
-        <select name="role" className="mt-3 w-full rounded-xl bg-slate-800 p-2"><option>admin</option><option>dokter</option><option>peneliti</option><option>pasien</option></select>
-        <button className="mt-4 w-full rounded-xl bg-cyan-500 p-2 font-semibold">Masuk</button>
-        <p className="mt-2 text-sm">Belum punya akun? <Link to="/register" className="text-cyan-400">Register</Link></p>
-        <p className="mt-4 text-center text-sm font-semibold text-cyan-500">Created by Dr. Sobri</p>
-      </form>
-    </div>
-  );
+
+  return <div className="grid min-h-screen place-items-center p-4"><form onSubmit={onSubmit} className="glass w-full max-w-md p-6 space-y-3"><h1 className="text-2xl font-bold">Login EYEVERSE AI</h1><input name="email" type="email" placeholder="Email" className="w-full rounded-xl bg-white/10 p-2" /><input name="password" type="password" placeholder="Password" className="w-full rounded-xl bg-white/10 p-2" />{error && <p className="text-sm text-red-300">{error}</p>}<button className="w-full rounded-xl bg-cyan-500 p-2 font-semibold">Masuk</button><p className="text-sm">Belum punya akun? <Link to="/register" className="text-cyan-300">Register</Link></p><p className="text-center text-sm text-cyan-400">Created by Dr. Sobri</p></form></div>;
 }
 
-export const RegisterPage = () => (
-  <div className="grid min-h-screen place-items-center p-4">
-    <form className="glass w-full max-w-md p-6">
-      <h1 className="text-2xl font-bold">Register</h1>
-      <input placeholder="Nama" className="mt-3 w-full rounded-xl bg-white/10 p-2" />
-      <input placeholder="Email" className="mt-3 w-full rounded-xl bg-white/10 p-2" />
-      <input placeholder="Password" type="password" className="mt-3 w-full rounded-xl bg-white/10 p-2" />
-      <button className="mt-4 w-full rounded-xl bg-cyan-500 p-2">Daftar</button>
-      <p className="mt-2 text-sm">Sudah punya akun? <Link to="/login" className="text-cyan-400">Login</Link></p>
-    </form>
-  </div>
-);
+export function RegisterPage() {
+  const { register } = useApp();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const name = fd.get('name')?.toString().trim();
+    const email = fd.get('email')?.toString().trim();
+    const password = fd.get('password')?.toString();
+    const confirm = fd.get('confirm')?.toString();
+    if (!name || !email.includes('@') || password.length < 6 || password !== confirm) {
+      setError('Validasi gagal. Cek nama/email/password/konfirmasi.');
+      return;
+    }
+    register({ name, email });
+    navigate('/dashboard');
+  };
+
+  return <div className="grid min-h-screen place-items-center p-4"><form onSubmit={onSubmit} className="glass w-full max-w-md p-6 space-y-3"><h1 className="text-2xl font-bold">Register EYEVERSE AI</h1><input name="name" placeholder="Nama" className="w-full rounded-xl bg-white/10 p-2" /><input name="email" type="email" placeholder="Email" className="w-full rounded-xl bg-white/10 p-2" /><input name="password" type="password" placeholder="Password" className="w-full rounded-xl bg-white/10 p-2" /><input name="confirm" type="password" placeholder="Konfirmasi Password" className="w-full rounded-xl bg-white/10 p-2" />{error && <p className="text-sm text-red-300">{error}</p>}<button className="w-full rounded-xl bg-cyan-500 p-2 font-semibold">Daftar</button><p className="text-sm">Sudah punya akun? <Link to="/login" className="text-cyan-300">Login</Link></p></form></div>;
+}
