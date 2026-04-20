@@ -4,9 +4,10 @@ import { buildSeedData } from '../utils/generateMockData';
 
 const AppContext = createContext(null);
 const seed = buildSeedData();
+const guestAuth = { email: 'guest@eyeverse.app', name: 'Guest EYEVERSE', role: 'dokter' };
 
 export function AppProvider({ children }) {
-  const [auth, setAuth] = useLocalStorageState('eyeverse_auth', null);
+  const [auth, setAuth] = useLocalStorageState('eyeverse_auth', guestAuth);
   const [localReports, setLocalReports] = useLocalStorageState('eyeverse_local_reports', []);
   const [localHistories, setLocalHistories] = useLocalStorageState('eyeverse_local_histories', []);
   const [chatHistory, setChatHistory] = useLocalStorageState('eyeverse_chat', []);
@@ -30,7 +31,7 @@ export function AppProvider({ children }) {
 
   const login = ({ email, name }) => setAuth({ email, name: name || 'User EYEVERSE', role: 'dokter' });
   const register = ({ email, name }) => setAuth({ email, name, role: 'dokter' });
-  const logout = () => setAuth(null);
+  const logout = () => setAuth(guestAuth);
 
   const value = {
     auth,
