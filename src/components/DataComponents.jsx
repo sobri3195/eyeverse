@@ -53,7 +53,21 @@ export function UploadPanel({ onFile }) {
 
 export function AnalysisResultCard({ result }) {
   if (!result) return <div className="glass p-4 text-sm">Belum ada hasil analisis.</div>;
-  return <div className="glass p-4 space-y-2"><p>Confidence: <b className="text-cyan-300">{formatPercent(result.confidence)}</b></p><p>Risk: <b>{result.riskLevel}</b> (Skor {result.score})</p><p className="text-sm opacity-80">{result.likelyCondition}</p><p className="text-sm">Rekomendasi: {result.recommendation}</p><p className="text-sm">Labels: {result.labels.join(', ')}</p><div className="h-44"><ResponsiveContainer><BarChart data={result.chart}><CartesianGrid strokeDasharray="3 3" opacity={0.2} /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" fill="#22d3ee" /></BarChart></ResponsiveContainer></div></div>;
+  const explanation = result.explainability || {};
+  return <div className="glass p-4 space-y-2">
+    <p>Probable Condition: <b className="text-cyan-300">{result.probableCondition}</b></p>
+    <p>Confidence: <b className="text-cyan-300">{result.confidence}%</b> | Risk: <b>{result.riskLevel}</b> | Severity: <b>{result.severityLevel}</b></p>
+    <p>Urgency: {result.urgency} | Eye Health Score: <b>{result.eyeHealthScore}</b></p>
+    <p className="text-sm">Alternative: {(result.alternativeConditions || []).map((a) => `${a.condition} (${a.probability}%)`).join(', ') || '-'}</p>
+    <div className="rounded-xl bg-white/5 p-2 text-sm">
+      <p className="font-semibold">Why this result?</p>
+      <p>{explanation.whyThisResult}</p>
+      <ul className="list-disc pl-5">{(explanation.topFactors || []).slice(0, 4).map((f) => <li key={f}>{f}</li>)}</ul>
+    </div>
+    <p className="text-sm">Recommendations: {(result.recommendations || []).join(', ')}</p>
+    <p className="text-sm">Related Eye Technologies: {(result.relatedTechnologies || []).join(', ') || '-'}</p>
+    <div className="h-44"><ResponsiveContainer><BarChart data={result.chart}><CartesianGrid strokeDasharray="3 3" opacity={0.2} /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" fill="#22d3ee" /></BarChart></ResponsiveContainer></div>
+  </div>;
 }
 
 export function ReportCard({ report, onView, onDelete }) {
@@ -67,7 +81,7 @@ export function HistoryTable({ rows, onDelete }) {
 export function ArticleCard({ article, onOpen }) { return <button onClick={() => onOpen(article)} className="glass p-4 text-left"><p className="font-semibold">{article.title}</p><p className="text-xs text-cyan-300">{article.category}</p><p className="text-sm opacity-80 mt-1">{article.content.slice(0, 95)}...</p></button>; }
 
 export function ChatWindow({ messages }) {
-  return <div className="glass h-80 overflow-y-auto p-3 space-y-2">{messages.map((m, i) => <div key={i} className={`rounded-xl px-3 py-2 text-sm ${m.sender === 'user' ? 'bg-cyan-500/20 ml-8' : 'bg-white/10 mr-8'}`}>{m.text}</div>)}</div>;
+  return <div className="glass h-80 overflow-y-auto p-3 space-y-2">{messages.map((m, i) => <div key={i} className={`rounded-xl px-3 py-2 text-sm ${m.sender === 'user' ? 'bg-cyan-500/20 ml-8' : 'bg-white/10 mr-8'}`}><div>{m.text}</div>{m.suggestions?.length ? <div className="mt-2 flex flex-wrap gap-1">{m.suggestions.slice(0,3).map((s)=> <span key={s} className="rounded-full bg-white/10 px-2 py-0.5 text-xs">{s}</span>)}</div> : null}</div>)}</div>;
 }
 
 export function PaginationLoadMore({ hasMore, onClick }) { return hasMore ? <button onClick={onClick} className="glass px-4 py-2">Load More</button> : null; }

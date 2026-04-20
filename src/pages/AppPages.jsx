@@ -7,6 +7,7 @@ import { eyeCategories, eyeTechnologies } from '../data/eyeTechnologies';
 import { exportCsv } from '../utils/exportCsv';
 import { exportPdf } from '../utils/exportPdf';
 import { chatbotEngine } from '../utils/chatbotEngine';
+import { buildSmartReport } from '../utils/reportEngine';
 import { simulateAnalysis } from '../utils/simulateAnalysis';
 import { categoryFilter, globalSearchFilter } from '../utils/filters';
 import { sortRecords } from '../utils/sorters';
@@ -76,21 +77,44 @@ export const EyeTechnologiesPage = () => <TechnologiesPage type="eye" />;
 
 export function AIDetailPage() {
   const { id } = useParams();
-  const { seed, addReport, addHistory, pushToast } = useApp();
+  const { seed, addReport, addHistory, pushToast, reports } = useApp();
   const ai = aiTechnologies.find((x) => x.id === id);
-  const patient = seed.patients[10];
-  const scan = seed.scans[5];
+  const [patientId, setPatientId] = useState(seed.patients[10].id);
+  const [scanType, setScanType] = useState('Fundus');
+  const [severityLevel, setSeverityLevel] = useState('moderate');
+  const [durationDays, setDurationDays] = useState(14);
+  const [symptoms, setSymptoms] = useState('penglihatan kabur, silau');
   const [result, setResult] = useState(null);
   if (!ai) return <AppLayout><ErrorState message="AI module tidak ditemukan" /></AppLayout>;
-  const run = () => setResult(simulateAnalysis({ patient, scanType: scan.scanType, symptoms: ['buram', 'silau'], aiModule: ai.name }));
+  const patient = seed.patients.find((p) => p.id === patientId) || seed.patients[10];
+  const previousExam = reports.find((r) => r.patientId === patient.id)?.analysisSnapshot;
+
+  const run = () => setResult(simulateAnalysis({ patient, scanType, symptoms: symptoms.split(',').map((x) => x.trim()), aiModule: ai.name, severityLevel, durationDays, previousExam }));
   const save = () => {
     if (!result) return;
     const idNum = Date.now();
-    addReport({ id: `R-L-${idNum}`, patientId: patient.id, patientName: patient.name, eyeCondition: patient.eyeCondition, scanType: scan.scanType, analysisDate: new Date().toISOString().slice(0,10), doctor: 'Dr. Sobri', confidenceScore: result.confidenceScore, riskLevel: result.riskLevel, diagnosisResult: result.diagnosisResult, recommendations: result.recommendations, moduleUsed: ai.name, status: 'Draft', createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
-    addHistory({ id: `H-L-${idNum}`, patientId: patient.id, patientName: patient.name, action: 'Diagnosis', riskLevel: result.riskLevel, linkedReportId: `R-L-${idNum}`, note: result.diagnosisResult, createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
+    const analysisSnapshot = { probableCondition: result.probableCondition, confidence: result.confidence, diseaseProbability: result.diseaseProbability };
+    const smartReport = buildSmartReport({ patient, input: { scanType, aiModule: ai.name, symptoms: symptoms.split(',').map((x) => x.trim()) }, analysis: result, explainability: result.explainability, recommendations: result.recommendations });
+    addReport({ id: `R-L-${idNum}`, patientId: patient.id, patientName: patient.name, eyeCondition: result.probableCondition, scanType, analysisDate: new Date().toISOString().slice(0,10), doctor: 'Dr. Sobri', confidenceScore: result.confidence, riskLevel: result.riskLevel, diagnosisResult: result.diagnosisResult, recommendations: result.recommendations.join('; '), moduleUsed: ai.name, status: 'Draft', analysisSnapshot, smartReport, createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
+    addHistory({ id: `H-L-${idNum}`, patientId: patient.id, patientName: patient.name, action: `Diagnosis ${ai.name}`, riskLevel: result.riskLevel, linkedReportId: `R-L-${idNum}`, note: result.reportSummary, createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
     pushToast('Hasil analisis disimpan');
   };
-  return <AppLayout><PageHeader title={ai.name} subtitle={ai.fullDescription} breadcrumbs={['AI Technologies', ai.name]} /><div className="grid gap-4 lg:grid-cols-2"><div className="glass p-4"><p>Usage count: {seed.scans.filter((s)=>s.moduleId===ai.id).length}</p><div className="mt-2 flex gap-2"><button className="rounded bg-cyan-500 px-3 py-1" onClick={run}>Simulate</button><button className="rounded bg-white/10 px-3 py-1" onClick={save}>Save</button><button className="rounded bg-white/10 px-3 py-1" onClick={()=>result&&exportPdf(ai.name,result)}>PDF</button></div></div><AnalysisResultCard result={result} /></div></AppLayout>;
+  return <AppLayout><PageHeader title={ai.name} subtitle={ai.fullDescription} breadcrumbs={['AI Technologies', ai.name]} />
+    <div className="grid gap-4 lg:grid-cols-2">
+      <div className="glass p-4 space-y-2">
+        <p>Usage count: {seed.scans.filter((s)=>s.moduleId===ai.id).length}</p>
+        <select className="w-full rounded bg-slate-900 p-2" value={patientId} onChange={(e)=>setPatientId(e.target.value)}>{seed.patients.slice(0,200).map((p)=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <div className="grid grid-cols-2 gap-2">
+          <select className="rounded bg-slate-900 p-2" value={scanType} onChange={(e)=>setScanType(e.target.value)}>{['Fundus','OCT','Slit Lamp','Visual Field','Topography'].map((s)=><option key={s}>{s}</option>)}</select>
+          <select className="rounded bg-slate-900 p-2" value={severityLevel} onChange={(e)=>setSeverityLevel(e.target.value)}>{['mild','moderate','severe'].map((s)=><option key={s}>{s}</option>)}</select>
+        </div>
+        <input className="w-full rounded bg-white/10 p-2" value={durationDays} onChange={(e)=>setDurationDays(Number(e.target.value || 1))} type="number" min="1" />
+        <input className="w-full rounded bg-white/10 p-2" value={symptoms} onChange={(e)=>setSymptoms(e.target.value)} />
+        <div className="mt-2 flex gap-2"><button className="rounded bg-cyan-500 px-3 py-1" onClick={run}>Analyze</button><button className="rounded bg-white/10 px-3 py-1" onClick={save}>Save</button><button className="rounded bg-white/10 px-3 py-1" onClick={()=>result&&exportPdf(ai.name,result)}>PDF</button><button className="rounded bg-white/10 px-3 py-1" onClick={()=>result&&exportCsv(ai.slug,[result])}>CSV</button></div>
+      </div>
+      <AnalysisResultCard result={result} />
+    </div>
+  </AppLayout>;
 }
 
 export function EyeDetailPage() {
@@ -104,30 +128,55 @@ export function EyeDetailPage() {
 
 export function UploadPage() {
   const [meta, setMeta] = useState({});
+  const [scanType, setScanType] = useState('Fundus');
+  const [module, setModule] = useState('AI Klasifikasi Citra Mata');
   const [result, setResult] = useState(null);
+  const [processing, setProcessing] = useState(false);
   const { seed } = useApp();
-  return <AppLayout><PageHeader title="Upload Eye Image" subtitle="Frontend upload simulation" breadcrumbs={['Upload']} />
+  const analyze = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      setResult(simulateAnalysis({ patient: seed.patients[1], scanType, symptoms: ['mata merah', 'berair'], aiModule: module, imageFile: meta.file, severityLevel: 'moderate' }));
+      setProcessing(false);
+    }, 900);
+  };
+  return <AppLayout><PageHeader title="Upload Eye Image" subtitle="Image Analysis Simulation Engine" breadcrumbs={['Upload']} />
     <div className="grid gap-4 lg:grid-cols-2"><UploadPanel onFile={(file, preview) => setMeta({ file, preview })} />
-    <div><AnalysisResultCard result={result} /><button className="mt-2 rounded bg-cyan-500 px-3 py-1" onClick={()=>setResult(simulateAnalysis({ patient: seed.patients[1], scanType: 'Fundus', symptoms: ['merah'], aiModule: 'AI Klasifikasi Citra Mata' }))}>Analyze Upload</button></div></div>
+    <div className="space-y-2">
+      <div className="glass p-3">
+        <div className="grid grid-cols-2 gap-2">
+          <select className="rounded bg-slate-900 p-2" value={scanType} onChange={(e)=>setScanType(e.target.value)}>{['Fundus','OCT','Slit Lamp','Visual Field','Topography'].map((s)=><option key={s}>{s}</option>)}</select>
+          <select className="rounded bg-slate-900 p-2" value={module} onChange={(e)=>setModule(e.target.value)}>{aiTechnologies.map((m)=><option key={m.id}>{m.name}</option>)}</select>
+        </div>
+        <button className="mt-2 rounded bg-cyan-500 px-3 py-1" onClick={analyze} disabled={!meta.file || processing}>{processing ? 'Processing...' : 'Analyze Upload'}</button>
+      </div>
+      {result?.imageAnalysis?.valid && <div className="glass p-3 text-sm"><p className="font-semibold">Image Findings</p><p>{result.imageAnalysis.findingsSummary}</p><p>Labels: {result.imageAnalysis.detectedLabels.join(', ')}</p><p>Abnormality Score: {result.imageAnalysis.abnormalityScore} | Confidence: {result.imageAnalysis.confidence}%</p><div className="mt-2 grid grid-cols-2 gap-2">{result.imageAnalysis.regions.map((r, idx)=><div key={idx} className="rounded bg-white/10 p-2">{r.label} ({r.x},{r.y})</div>)}</div></div>}
+      <AnalysisResultCard result={result} />
+    </div></div>
   </AppLayout>;
 }
 
 export function DiagnosisPage() {
-  const { seed, addReport, addHistory } = useApp();
+  const { seed, addReport, addHistory, reports } = useApp();
   const [patientId, setPatientId] = useState(seed.patients[0].id);
   const [scanType, setScanType] = useState('Fundus');
   const [symptoms, setSymptoms] = useState('buram, silau');
+  const [severityLevel, setSeverityLevel] = useState('moderate');
+  const [durationDays, setDurationDays] = useState(14);
   const [result, setResult] = useState(null);
   const patient = seed.patients.find((p) => p.id === patientId) || seed.patients[0];
 
-  const run = () => setResult(simulateAnalysis({ patient, scanType, symptoms: symptoms.split(',').map((s) => s.trim()), aiModule: 'AI Pencocokan Gejala Mata' }));
+  const previousExam = reports.find((r) => r.patientId === patient.id)?.analysisSnapshot;
+  const run = () => setResult(simulateAnalysis({ patient, scanType, symptoms: symptoms.split(',').map((s) => s.trim()), aiModule: 'AI Pencocokan Gejala Mata', severityLevel, durationDays, previousExam }));
   const save = () => {
     if (!result) return;
     const idNum = Date.now();
-    addReport({ id: `R-L-${idNum}`, patientId: patient.id, patientName: patient.name, age: patient.age, gender: patient.gender, eyeCondition: patient.eyeCondition, scanType, analysisDate: new Date().toISOString().slice(0,10), doctor: 'Dr. Sobri', confidenceScore: result.confidenceScore, riskLevel: result.riskLevel, diagnosisResult: result.diagnosisResult, recommendations: result.recommendations, moduleUsed: 'AI Pencocokan Gejala Mata', status: 'Final', createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
+    const smartReport = buildSmartReport({ patient, input: { scanType, aiModule: 'AI Pencocokan Gejala Mata', symptoms: symptoms.split(',').map((s) => s.trim()) }, analysis: result, explainability: result.explainability, recommendations: result.recommendations });
+    addReport({ id: `R-L-${idNum}`, patientId: patient.id, patientName: patient.name, age: patient.age, gender: patient.gender, eyeCondition: patient.eyeCondition, scanType, analysisDate: new Date().toISOString().slice(0,10), doctor: 'Dr. Sobri', confidenceScore: result.confidence, riskLevel: result.riskLevel, diagnosisResult: result.diagnosisResult, recommendations: result.recommendations.join('; '), analysisSnapshot: { probableCondition: result.probableCondition, confidence: result.confidence, diseaseProbability: result.diseaseProbability }, smartReport, moduleUsed: 'AI Pencocokan Gejala Mata', status: 'Final', createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
     addHistory({ id: `H-L-${idNum}`, patientId: patient.id, patientName: patient.name, action: 'Diagnosis Simulation', riskLevel: result.riskLevel, linkedReportId: `R-L-${idNum}`, note: result.diagnosisResult, createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10) });
   };
-  return <AppLayout><PageHeader title="Diagnosis Simulation" subtitle="Rule engine berbasis gejala, usia, scan, riwayat" breadcrumbs={['Diagnosis']} /><div className="grid gap-4 lg:grid-cols-2"><div className="glass p-4 space-y-2"><select className="w-full rounded bg-slate-900 p-2" value={patientId} onChange={(e)=>setPatientId(e.target.value)}>{seed.patients.slice(0,200).map((p)=><option key={p.id} value={p.id}>{p.id} - {p.name}</option>)}</select><select className="w-full rounded bg-slate-900 p-2" value={scanType} onChange={(e)=>setScanType(e.target.value)}>{['Fundus','OCT','Slit Lamp','Visual Field','Topography'].map((s)=><option key={s}>{s}</option>)}</select><input className="w-full rounded bg-white/10 p-2" value={symptoms} onChange={(e)=>setSymptoms(e.target.value)} /><div className="flex gap-2"><button className="rounded bg-cyan-500 px-3 py-1" onClick={run}>Proses</button><button className="rounded bg-white/10 px-3 py-1" onClick={save}>Simpan</button></div></div><AnalysisResultCard result={result} /></div></AppLayout>;
+  return <AppLayout><PageHeader title="Diagnosis Simulation" subtitle="Rule engine berbasis gejala, usia, scan, riwayat" breadcrumbs={['Diagnosis']} /><div className="grid gap-4 lg:grid-cols-2"><div className="glass p-4 space-y-2"><select className="w-full rounded bg-slate-900 p-2" value={patientId} onChange={(e)=>setPatientId(e.target.value)}>{seed.patients.slice(0,200).map((p)=><option key={p.id} value={p.id}>{p.id} - {p.name}</option>)}</select><select className="w-full rounded bg-slate-900 p-2" value={scanType} onChange={(e)=>setScanType(e.target.value)}>{['Fundus','OCT','Slit Lamp','Visual Field','Topography'].map((s)=><option key={s}>{s}</option>)}</select><input className="w-full rounded bg-white/10 p-2" value={symptoms} onChange={(e)=>setSymptoms(e.target.value)} />
+      <div className="grid grid-cols-2 gap-2"><select className="rounded bg-slate-900 p-2" value={severityLevel} onChange={(e)=>setSeverityLevel(e.target.value)}>{['mild','moderate','severe'].map((s)=><option key={s}>{s}</option>)}</select><input className="rounded bg-white/10 p-2" type="number" min="1" value={durationDays} onChange={(e)=>setDurationDays(Number(e.target.value || 1))} /></div><div className="flex gap-2"><button className="rounded bg-cyan-500 px-3 py-1" onClick={run}>Proses</button><button className="rounded bg-white/10 px-3 py-1" onClick={save}>Simpan</button></div></div><AnalysisResultCard result={result} /></div></AppLayout>;
 }
 
 export function AnalyticsPage() {
@@ -161,7 +210,7 @@ export function ReportsPage() {
     <div className="mb-3 grid gap-2 md:grid-cols-4"><SearchBar value={query} onChange={setQuery} placeholder="Cari report" /><FilterBar categories={riskFilters} selected={risk} onSelect={setRisk} /><SortSelect value={sort} onChange={setSort} options={[{value:'newest',label:'Newest'},{value:'oldest',label:'Oldest'},{value:'confidence-desc',label:'Confidence desc'}]} /><div className="glass px-3 py-2 text-sm">Local items: {localReports.length}</div></div>
     <div className="glass overflow-auto"><table className="w-full text-sm"><thead><tr><th>ID</th><th>Patient</th><th>Condition</th><th>Risk</th><th>Confidence</th><th>Date</th><th></th></tr></thead><tbody>{pageData.rows.map((r)=><tr key={r.id} className="border-t border-white/10"><td>{r.id}</td><td>{r.patientName}</td><td>{r.eyeCondition}</td><td>{r.riskLevel}</td><td>{r.confidenceScore}</td><td>{r.analysisDate}</td><td className="space-x-2"><button onClick={()=>setDetail(r)} className="text-cyan-300">Detail</button>{r.id.startsWith('R-L-') && <button onClick={()=>removeLocalReport(r.id)} className="text-red-300">Delete</button>}</td></tr>)}</tbody></table></div>
     <div className="mt-2 flex gap-2"><button className="glass px-3 py-1" disabled={page<=1} onClick={()=>setPage((p)=>p-1)}>Prev</button><span className="glass px-3 py-1">{page}/{pageData.totalPages}</span><button className="glass px-3 py-1" disabled={page>=pageData.totalPages} onClick={()=>setPage((p)=>p+1)}>Next</button></div>
-    <Modal open={Boolean(detail)} onClose={()=>setDetail(null)} title={`Detail Report ${detail?.id}`}>{detail && <div className="text-sm space-y-1"><p>{detail.diagnosisResult}</p><p>{detail.recommendations}</p></div>}</Modal>
+    <Modal open={Boolean(detail)} onClose={()=>setDetail(null)} title={`Detail Report ${detail?.id}`}>{detail && <div className="text-sm space-y-1"><p>{detail.diagnosisResult}</p><p>{detail.recommendations}</p><p>Confidence: {detail.confidenceScore}</p><p>Created by system: EYEVERSE AI</p></div>}</Modal>
   </AppLayout>;
 }
 
@@ -201,8 +250,8 @@ export function ChatbotPage() {
   const [text, setText] = useState('');
   const send = (msg) => {
     if (!msg.trim()) return;
-    const reply = chatbotEngine(msg, seed.chatbotKnowledge);
-    setChatHistory((prev) => [...prev, { sender: 'user', text: msg }, { sender: 'bot', text: reply }]);
+    const reply = chatbotEngine(msg, chatHistory);
+    setChatHistory((prev) => [...prev, { sender: 'user', text: msg }, { sender: 'bot', text: reply.text, suggestions: reply.suggestions, intent: reply.intent }]);
     setText('');
   };
   return <AppLayout><PageHeader title="AI Chatbot" subtitle="Knowledge base 100 entries" breadcrumbs={['Chatbot']} />
