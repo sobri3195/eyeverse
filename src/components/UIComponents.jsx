@@ -46,7 +46,7 @@ export function Breadcrumb({ items }) {
 export function Sidebar({ open, setOpen }) {
   return (
     <>
-      <aside className="glass hidden lg:flex lg:w-64 lg:flex-col lg:p-4 lg:h-[calc(100vh-2rem)]">
+      <aside className="glass hidden lg:fixed lg:left-4 lg:top-4 lg:flex lg:h-[calc(100vh-2rem)] lg:w-64 lg:flex-col lg:overflow-y-auto lg:p-4">
         <Brand />
         <nav className="mt-4 flex flex-col gap-1">{navItems.map(([to, label, Icon]) => <NavLink key={to} to={to} className={({ isActive }) => `rounded-xl px-3 py-2 text-sm flex items-center gap-2 ${isActive ? 'bg-cyan-500/20 text-cyan-300' : 'hover:bg-white/10'}`}><Icon size={15} />{label}</NavLink>)}</nav>
       </aside>
