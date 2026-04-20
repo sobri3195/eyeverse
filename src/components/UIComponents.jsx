@@ -63,7 +63,7 @@ export function Navbar() {
   const [openNotif, setOpenNotif] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   const [openSide, setOpenSide] = useState(false);
-  const { notifications, globalSearch, setGlobalSearch, auth, logout } = useApp();
+  const { notifications, globalSearch, setGlobalSearch, auth } = useApp();
   const navigate = useNavigate();
 
   return (
@@ -79,7 +79,7 @@ export function Navbar() {
         <ThemeToggle />
         <div className="relative">
           <button className="glass flex items-center gap-1 px-3 py-2" onClick={() => setOpenProfile((p) => !p)}><UserCircle2 size={16} /><ChevronDown size={14} /></button>
-          {openProfile && <div className="glass absolute right-0 mt-2 w-44 p-2 text-sm"><p className="px-2 py-1">{auth?.name || 'Guest'}</p><button onClick={() => navigate('/dashboard')} className="w-full rounded px-2 py-1 text-left hover:bg-white/10">Dashboard</button><button onClick={logout} className="w-full rounded px-2 py-1 text-left hover:bg-white/10">Logout</button></div>}
+          {openProfile && <div className="glass absolute right-0 mt-2 w-44 p-2 text-sm"><p className="px-2 py-1">{auth?.name || 'User'}</p><button onClick={() => navigate('/dashboard')} className="w-full rounded px-2 py-1 text-left hover:bg-white/10">Dashboard</button></div>}
         </div>
       </div>
     </>

@@ -26,8 +26,6 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/register" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={protect(<DashboardPage />)} />
       <Route path="/ai-technologies" element={protect(<AITechnologiesPage />)} />
       <Route path="/eye-technologies" element={protect(<EyeTechnologiesPage />)} />
