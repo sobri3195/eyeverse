@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { NavLink, Navigate, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Activity, Bell, Bot, Brain, Camera, ChevronDown, Eye, FileText, Home, LayoutDashboard, Menu, Microscope, Moon, Radar,
   ScanEye, Search, ShieldCheck, Stethoscope, Sun, UserCircle2, X
@@ -103,7 +103,5 @@ export function Modal({ open, onClose, title, children }) {
 }
 
 export function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useApp();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 }
