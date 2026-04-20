@@ -1,21 +1,27 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Bell, Moon, Search, Sun } from 'lucide-react';
+import { Bell, Menu, Moon, Search, Sun, X } from 'lucide-react';
+import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 
 export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
   return (
-    <button onClick={toggleTheme} className="glass p-2">
+    <button onClick={toggleTheme} className="glass p-2" aria-label="Toggle theme">
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
     </button>
   );
 };
 
 export const SearchBar = ({ value, onChange }) => (
-  <div className="glass flex items-center gap-2 px-3 py-2">
-    <Search size={16} />
-    <input className="w-full bg-transparent outline-none" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search modul, pasien, laporan..." />
+  <div className="glass flex w-full items-center gap-2 px-3 py-2">
+    <Search size={16} className="shrink-0" />
+    <input
+      className="w-full bg-transparent text-sm outline-none sm:text-base"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Search modul, pasien, laporan..."
+    />
   </div>
 );
 
@@ -25,10 +31,19 @@ const links = [
   ['/education', 'Education'], ['/chatbot', 'Chatbot'], ['/admin', 'Admin'], ['/about', 'About'], ['/contact', 'Contact']
 ];
 
+const Brand = ({ compact = false }) => (
+  <div className="flex items-center gap-3">
+    <img src="/logo-eyeverse.svg" alt="EYEVERSE AI logo" className={compact ? 'h-8 w-8' : 'h-10 w-10'} />
+    <div>
+      <h2 className={compact ? 'text-lg font-bold text-cyan-500' : 'text-xl font-bold text-cyan-500'}>EYEVERSE AI</h2>
+      {!compact && <p className="text-xs opacity-70">Platform 41 Teknologi AI Mata + 20 Teknologi Mata</p>}
+    </div>
+  </div>
+);
+
 export const Sidebar = () => (
   <aside className="glass hidden h-[calc(100vh-2rem)] w-64 flex-col gap-2 p-4 lg:flex">
-    <h2 className="text-xl font-bold text-cyan-500">EYEVERSE AI</h2>
-    <p className="text-xs opacity-70">Platform 41 Teknologi AI Mata + 20 Teknologi Mata</p>
+    <Brand />
     <nav className="mt-4 flex flex-col gap-1 text-sm">
       {links.map(([to, label]) => (
         <NavLink key={to} to={to} className={({ isActive }) => `rounded-xl px-3 py-2 ${isActive ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-white/10'}`}>
@@ -41,14 +56,46 @@ export const Sidebar = () => (
 
 export const Navbar = ({ search, setSearch }) => {
   const { notifications } = useApp();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <header className="mb-4 flex items-center gap-3">
-      <SearchBar value={search} onChange={setSearch} />
-      <div className="glass flex items-center gap-2 p-2">
-        <Bell size={16} />
-        <span className="text-xs">{notifications.length}</span>
+    <header className="mb-4">
+      <div className="mb-3 flex items-center justify-between lg:hidden">
+        <Brand compact />
+        <button
+          className="glass p-2"
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          aria-label="Toggle navigation menu"
+        >
+          {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
       </div>
-      <ThemeToggle />
+
+      {mobileMenuOpen && (
+        <nav className="glass mb-3 grid grid-cols-2 gap-1 p-3 text-sm sm:grid-cols-3 lg:hidden">
+          {links.map(([to, label]) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) => `rounded-lg px-2 py-2 ${isActive ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-white/10'}`}
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+      )}
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <SearchBar value={search} onChange={setSearch} />
+        <div className="ml-auto flex items-center gap-2">
+          <div className="glass flex items-center gap-2 p-2">
+            <Bell size={16} />
+            <span className="text-xs">{notifications.length}</span>
+          </div>
+          <ThemeToggle />
+        </div>
+      </div>
     </header>
   );
 };
@@ -83,7 +130,7 @@ export const LoadingSkeleton = () => <div className="glass h-24 animate-pulse" /
 export const Toasts = () => {
   const { toasts } = useApp();
   return (
-    <div className="fixed right-5 top-5 z-50 flex w-72 flex-col gap-2">
+    <div className="fixed right-5 top-5 z-50 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2">
       {toasts.map((t) => <div key={t.id} className="glass px-3 py-2 text-sm">{t.message}</div>)}
     </div>
   );

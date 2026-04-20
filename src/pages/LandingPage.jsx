@@ -3,15 +3,18 @@ import { Footer, SectionTitle } from '../components/CoreComponents';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-6 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 text-white sm:p-6">
       <div className="mx-auto max-w-6xl">
-        <div className="glass p-8">
-          <h1 className="text-4xl font-extrabold">EYEVERSE AI</h1>
+        <div className="glass p-5 sm:p-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <img src="/logo-eyeverse.svg" alt="EYEVERSE AI logo" className="h-12 w-12" />
+            <h1 className="text-3xl font-extrabold sm:text-4xl">EYEVERSE AI</h1>
+          </div>
           <p className="mt-2 text-cyan-300">Platform 41 Teknologi AI Mata + 20 Teknologi Mata</p>
           <p className="mt-4 max-w-3xl text-sm opacity-90">Platform medical-tech premium untuk analitik mata, simulasi diagnosis, monitoring pasien, dan pelaporan pintar berbasis AI.</p>
-          <div className="mt-6 flex gap-3">
-            <Link className="rounded-xl bg-cyan-500 px-4 py-2 font-semibold" to="/login">Masuk</Link>
-            <Link className="rounded-xl border border-cyan-400 px-4 py-2" to="/dashboard">Lihat Dashboard</Link>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link className="rounded-xl bg-cyan-500 px-4 py-2 text-center font-semibold" to="/login">Masuk</Link>
+            <Link className="rounded-xl border border-cyan-400 px-4 py-2 text-center" to="/dashboard">Lihat Dashboard</Link>
           </div>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
