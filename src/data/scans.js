@@ -1,2 +1,2 @@
 import { buildSeedData } from '../utils/generateMockData';
-export const patients = buildSeedData().patients;
+export const scans = buildSeedData().scans;

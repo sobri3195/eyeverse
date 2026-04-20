@@ -1,8 +1,8 @@
 export const storage = {
   get(key, fallback) {
     try {
-      const value = localStorage.getItem(key);
-      return value ? JSON.parse(value) : fallback;
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
     } catch {
       return fallback;
     }
@@ -10,7 +10,4 @@ export const storage = {
   set(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
   },
-  remove(key) {
-    localStorage.removeItem(key);
-  }
 };

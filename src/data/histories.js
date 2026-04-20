@@ -1,2 +1,2 @@
 import { buildSeedData } from '../utils/generateMockData';
-export const patients = buildSeedData().patients;
+export const initialHistories = buildSeedData().histories;
