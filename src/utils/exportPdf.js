@@ -1,6 +1,5 @@
-import jsPDF from 'jspdf';
-
-export function exportPdf(title, payload) {
+export async function exportPdf(title, payload) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   doc.setFontSize(16);
   doc.text(title, 14, 18);
